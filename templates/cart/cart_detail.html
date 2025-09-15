@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+
+{% block title %}Your Shopping Cart{% endblock %}
+
+{% block content %}
+<div class="container cart-detail">
+    <h1>Your Shopping Cart</h1>
+    
+    {% if cart.items.all %}
+        <div class="cart-items-container">
+            {% for item in cart.items.all %}
+            <div class="cart-item-card" data-item-id="{{ item.id }}">
+                <div class="cart-item-image">
+                    {% if item.product.image %}
+                        <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" class="cart-thumbnail">
+                    {% else %}
+                        <div class="no-image-small">No Image</div>
+                    {% endif %}
+                </div>
+                <div class="cart-item-details">
+                    <h4><a href="{% url 'product_detail' item.product.id %}">{{ item.product.name }}</a></h4>
+                    <p class="cart-item-category">{{ item.product.category }}</p>
+                    <div class="cart-item-price-row">
+                        <span class="cart-item-price">${{ item.product.price }}</span>
+                        <span class="cart-item-total">${{ item.get_cost }}</span>
+                    </div>
+                    <div class="cart-item-actions">
+                        <form method="post" action="{% url 'update_cart' item.id %}" class="quantity-form">
+                            {% csrf_token %}
+                            <div class="quantity-controls">
+                                <button type="button" class="btn btn-sm btn-outline-secondary quantity-btn decrease">-</button>
+                                <input type="number" name="quantity" value="{{ item.quantity }}" min="1" max="{{ item.product.inventory }}" class="form-control quantity-input">
+                                <button type="button" class="btn btn-sm btn-outline-secondary quantity-btn increase">+</button>
+                            </div>
+                        </form>
+                        <form method="post" action="{% url 'update_cart' item.id %}" class="remove-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="remove">
+                            <button type="submit" class="btn btn-sm btn-outline-danger remove-btn">
+                                <i class="fas fa-trash-alt"></i> Remove
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="cart-summary">
+            <div class="cart-total-section">
+                <h3>Order Summary</h3>
+                <div class="cart-total-row">
+                    <span>Subtotal:</span>
+                    <span>${{ cart.get_total_price }}</span>
+                </div>
+                <div class="cart-total-row">
+                    <span>Shipping:</span>
+                    <span>Free</span>
+                </div>
+                <div class="cart-total-row grand-total">
+                    <span>Total:</span>
+                    <span>${{ cart.get_total_price }}</span>
+                </div>
+            </div>
+            
+            <div class="cart-actions">
+                <a href="{% url 'checkout' %}" class="btn btn-primary btn-lg checkout-btn">
+                    <i class="fas fa-lock"></i> Proceed to Checkout
+                </a>
+                <div class="secondary-actions">
+                    <a href="{% url 'product_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Continue Shopping
+                    </a>
+                    <form method="post" action="{% url 'clear_cart' %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-danger">
+                            <i class="fas fa-trash"></i> Clear Cart
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="empty-cart">
+            <i class="fas fa-shopping-cart empty-cart-icon"></i>
+            <h3>Your cart is empty</h3>
+            <p>Looks like you haven't added any products to your cart yet.</p>
+            <a href="{% url 'product_list' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-shopping-bag"></i> Browse Products
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle quantity buttons
+        const quantityForms = document.querySelectorAll('.quantity-form');
+        const removeForms = document.querySelectorAll('.remove-form');
+        const clearCartForm = document.querySelector('.clear-cart-form');
+        
+        // Function to update cart item quantity via AJAX
+        function updateCartItemQuantity(itemId, quantity) {
+            const formData = new FormData();
+            formData.append('quantity', quantity);
+            
+            // Get CSRF token from cookie
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            fetch(`/cart/update/${itemId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrftoken
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update cart total
+                    document.querySelectorAll('.cart-total-row span:last-child').forEach(el => {
+                        if (el.textContent.includes('$')) {
+                            el.textContent = `$${data.total_price}`;
+                        }
+                    });
+                    
+                    // Update item total price
+                    const cartItem = document.querySelector(`.cart-item-card[data-item-id="${itemId}"]`);
+                    if (cartItem && data.item_price) {
+                        const itemTotalElement = cartItem.querySelector('.cart-item-total');
+                        if (itemTotalElement) {
+                            itemTotalElement.textContent = `$${data.item_price}`;
+                        }
+                    }
+                    
+                    // Update cart count in header
+                    const cartCount = document.querySelector('.cart-count');
+                    if (cartCount) {
+                        cartCount.textContent = data.total_items;
+                    }
+                    
+                    // If quantity is 0, remove the item from the DOM
+                    if (quantity <= 0) {
+                        const cartItem = document.querySelector(`.cart-item-card[data-item-id="${itemId}"]`);
+                        if (cartItem) {
+                            cartItem.remove();
+                        }
+                        
+                        // If no items left, reload to show empty cart
+                        if (data.total_items === 0) {
+                            window.location.reload();
+                        }
+                    }
+                }
+            })
+            .catch(error => console.error('Error updating cart:', error));
+        }
+        
+        // Function to remove cart item via AJAX
+        function removeCartItem(itemId) {
+            const formData = new FormData();
+            formData.append('action', 'remove');
+            
+            // Get CSRF token from cookie
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            fetch(`/cart/update/${itemId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrftoken
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update cart total
+                    document.querySelectorAll('.cart-total-row span:last-child').forEach(el => {
+                        if (el.textContent.includes('$')) {
+                            el.textContent = `$${data.total_price}`;
+                        }
+                    });
+                    
+                    // Update cart count in header
+                    const cartCount = document.querySelector('.cart-count');
+                    if (cartCount) {
+                        cartCount.textContent = data.total_items;
+                    }
+                    
+                    // Remove the item from the DOM
+                    const cartItem = document.querySelector(`.cart-item-card[data-item-id="${itemId}"]`);
+                    if (cartItem) {
+                        cartItem.remove();
+                    }
+                    
+                    // If no items left, reload to show empty cart
+                    if (data.total_items === 0) {
+                        window.location.reload();
+                    }
+                }
+            })
+            .catch(error => console.error('Error removing item:', error));
+        }
+        
+        // Handle quantity buttons
+        quantityForms.forEach(form => {
+            const decreaseBtn = form.querySelector('.decrease');
+            const increaseBtn = form.querySelector('.increase');
+            const quantityInput = form.querySelector('.quantity-input');
+            const maxQuantity = parseInt(quantityInput.getAttribute('max'));
+            const itemId = form.closest('.cart-item-card').getAttribute('data-item-id');
+            
+            decreaseBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                let currentValue = parseInt(quantityInput.value);
+                if (currentValue > 1) {
+                    quantityInput.value = currentValue - 1;
+                    updateCartItemQuantity(itemId, currentValue - 1);
+                }
+            });
+            
+            increaseBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                let currentValue = parseInt(quantityInput.value);
+                if (currentValue < maxQuantity) {
+                    quantityInput.value = currentValue + 1;
+                    updateCartItemQuantity(itemId, currentValue + 1);
+                }
+            });
+            
+            quantityInput.addEventListener('change', function(e) {
+                e.preventDefault();
+                updateCartItemQuantity(itemId, this.value);
+            });
+        });
+        
+        // Handle remove buttons
+        removeForms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const itemId = form.closest('.cart-item-card').getAttribute('data-item-id');
+                removeCartItem(itemId);
+            });
+        });
+    });
+</script>
+{% endblock %}

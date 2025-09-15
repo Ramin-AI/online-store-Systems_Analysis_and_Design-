@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Product: {{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="container delete-confirmation">
+    <div class="card">
+        <div class="card-header bg-danger text-white">
+            <h2>Delete Product</h2>
+        </div>
+        <div class="card-body">
+            <h3>Are you sure you want to delete "{{ product.name }}"?</h3>
+            
+            <div class="product-info mt-4">
+                <p><strong>Category:</strong> {{ product.category }}</p>
+                <p><strong>Price:</strong> ${{ product.price }}</p>
+                <p><strong>Inventory:</strong> {{ product.inventory }}</p>
+            </div>
+            
+            <div class="alert alert-warning mt-3">
+                <i class="fas fa-exclamation-triangle"></i> This action cannot be undone.
+            </div>
+            
+            <form method="post" class="mt-4">
+                {% csrf_token %}
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-danger">Yes, Delete Product</button>
+                    <a href="{% url 'admin_product_list' %}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+
+{% block title %}Checkout{% endblock %}
+
+{% block content %}
+<div class="container checkout my-5">
+    <h1 class="mb-4">Checkout</h1>
+    
+    <div class="row">
+        <!-- Order Summary -->
+        <div class="col-md-5 order-md-2 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="my-0">Order Summary</h4>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group mb-3">
+                        {% for item in cart.items.all %}
+                        <li class="list-group-item d-flex justify-content-between lh-condensed">
+                            <div>
+                                <h6 class="my-0 fw-bold">{{ item.product.name }}</h6>
+                                <small class="text-muted">{{ item.quantity }} x ${{ item.product.price }}</small>
+                            </div>
+                            <span class="text-muted">${{ item.get_cost }}</span>
+                        </li>
+                        {% endfor %}
+                        <li class="list-group-item d-flex justify-content-between bg-light">
+                            <span>Total</span>
+                            <strong class="text-primary">${{ cart.get_total_price }}</strong>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Checkout Form -->
+        <div class="col-md-7 order-md-1">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="my-0">Shipping Information</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" class="needs-validation">
+                        {% csrf_token %}
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6 mb-3">
+                                <label for="firstName" class="form-label fw-bold">First name</label>
+                                <input type="text" class="form-control" id="firstName" placeholder="" value="{{ request.user.first_name }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="lastName" class="form-label fw-bold">Last name</label>
+                                <input type="text" class="form-control" id="lastName" placeholder="" value="{{ request.user.last_name }}" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label fw-bold">Email</label>
+                            <input type="email" class="form-control" id="email" placeholder="you@example.com" value="{{ request.user.email }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="address" class="form-label fw-bold">Address</label>
+                            <input type="text" class="form-control" id="address" placeholder="1234 Main St" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="address2" class="form-label">Address 2 <span class="text-muted">(Optional)</span></label>
+                            <input type="text" class="form-control" id="address2" placeholder="Apartment or suite">
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-5 mb-3">
+                                <label for="country" class="form-label fw-bold">Country</label>
+                                <select class="form-select" id="country" required>
+                                    <option value="">Choose...</option>
+                                    <option selected>United States</option>
+                                    <option>Canada</option>
+                                    <option>United Kingdom</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="state" class="form-label fw-bold">State</label>
+                                <select class="form-select" id="state" required>
+                                    <option value="">Choose...</option>
+                                    <option>California</option>
+                                    <option>New York</option>
+                                    <option>Texas</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="zip" class="form-label fw-bold">Zip</label>
+                                <input type="text" class="form-control" id="zip" placeholder="" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="my-0">Payment Information</h4>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="d-block mb-4">
+                            <div class="form-check mb-2">
+                                <input id="credit" name="paymentMethod" type="radio" class="form-check-input" checked required>
+                                <label class="form-check-label fw-bold" for="credit">Credit card</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input id="debit" name="paymentMethod" type="radio" class="form-check-input" required>
+                                <label class="form-check-label fw-bold" for="debit">Debit card</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input id="paypal" name="paymentMethod" type="radio" class="form-check-input" required>
+                                <label class="form-check-label fw-bold" for="paypal">PayPal</label>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6 mb-3">
+                                <label for="cc-name" class="form-label fw-bold">Name on card</label>
+                                <input type="text" class="form-control" id="cc-name" placeholder="" required>
+                                <small class="text-muted">Full name as displayed on card</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="cc-number" class="form-label fw-bold">Credit card number</label>
+                                <input type="text" class="form-control" id="cc-number" placeholder="" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6 mb-3">
+                                <label for="cc-expiration" class="form-label fw-bold">Expiration</label>
+                                <input type="text" class="form-control" id="cc-expiration" placeholder="MM/YY" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="cc-cvv" class="form-label fw-bold">CVV</label>
+                                <input type="text" class="form-control" id="cc-cvv" placeholder="" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2">
+                     <button class="btn btn-primary btn-lg" type="submit">Place Order</button>
+                     <a href="{% url 'cart_detail' %}" class="btn btn-outline-secondary btn-lg">Back to Cart</a>
+                 </div>
+             </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

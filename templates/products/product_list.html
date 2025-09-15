@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}Products{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <!-- Filter sidebar -->
+        <div class="col-md-3 filter-sidebar">
+            <h3>Filter Products</h3>
+            <form method="get" action="{% url 'product_list' %}">
+                <p>
+                    <label for="id_category">Category:</label>
+                    <select name="category" id="id_category" class="form-select">
+                        {% for value, display in filter_form.fields.category.choices %}
+                            <option value="{{ value }}" {% if filter_form.category.value == value %}selected{% endif %}>{{ display|safe }}</option>
+                        {% endfor %}
+                    </select>
+                </p>
+                <button type="submit" class="btn btn-primary">Apply Filter</button>
+                <a href="{% url 'product_list' %}" class="btn btn-secondary">Clear Filter</a>
+            </form>
+        </div>
+        
+        <!-- Product list -->
+        <div class="col-md-9">
+            <h1>Products</h1>
+            
+            {% if products %}
+                <div class="row product-grid">
+                    {% for product in products %}
+                    <div class="col-md-4 mb-4">
+                        <div class="card product-card">
+                            <a href="{% url 'product_detail' product.id %}" class="product-image-link">
+                                {% if product.image %}
+                                    <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                                {% else %}
+                                    <div class="no-image">No Image</div>
+                                {% endif %}
+                            </a>
+                            <div class="card-body">
+                                <h5 class="card-title"><a href="{% url 'product_detail' product.id %}">{{ product.name }}</a></h5>
+                                <p class="card-text price">${{ product.price }}</p>
+                                <p class="card-text category">{{ product.category }}</p>
+                                {% if product.is_available %}
+                                    <p class="card-text stock in-stock">In Stock ({{ product.inventory }})</p>
+                                    <div class="product-actions">
+                                        <a href="{% url 'add_to_cart' product.id %}" class="btn btn-primary add-to-cart-btn text-center" data-product-id="{{ product.id }}">Add to Cart</a>
+                                    </div>
+                                {% else %}
+                                    <p class="card-text stock out-of-stock">Out of Stock</p>
+                                    <button class="btn btn-secondary" disabled>Out of Stock</button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p>No products available.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
