@@ -4,6 +4,5 @@
 
 
 - Sign in as Admin:
-login with:
-Name: Ramin
-Password: onlineshop2468
+1. Name: Ramin
+2. Password: onlineshop2468
